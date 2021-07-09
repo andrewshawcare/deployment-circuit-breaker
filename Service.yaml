@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  Version:
+    Type: String
+  ECRRepositoryHostname:
+    Type: String
+Resources:
+  Cluster:
+    Type: AWS::ECS::Cluster
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Ref AWS::StackName
+      GroupName: !Ref AWS::StackName
+      SecurityGroupEgress:
+        - CidrIp: '0.0.0.0/0'
+          Description: Allow all outbound traffic
+          IpProtocol: -1
+      SecurityGroupIngress:
+        - CidrIp: '0.0.0.0/0'
+          Description: Allow all inbound traffic
+          IpProtocol: -1
+      VpcId: !ImportValue INFRA-CE-vpc-1-vpc-id
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /ecs/${AWS::StackName}
+      RetentionInDays: 7
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Essential: true
+          HealthCheck:
+            Command: [ "CMD-SHELL", "./healthcheck.sh"]
+            Timeout: 60
+          Image: !Sub ${ECRRepositoryHostname}/deployment-circuit-breaker/application:${Version}
+          Name: application
+          PortMappings:
+            - ContainerPort: 80
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: application
+        - Command: ["./healthcheck.sh"]
+          Essential: false
+          Image: !Sub ${ECRRepositoryHostname}/deployment-circuit-breaker/application:${Version}
+          Name: healthcheck
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: healthcheck
+      Cpu: 1024
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      Family: !Ref AWS::StackName
+      Memory: 2048
+      NetworkMode: awsvpc
+      RequiresCompatibilities: ['FARGATE']
+      TaskRoleArn: !GetAtt TaskRole.Arn
+  Service:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !GetAtt Cluster.Arn
+      DesiredCount: 2
+      DeploymentConfiguration:
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+            - !Ref SecurityGroup
+          Subnets: []
+      SchedulingStrategy: REPLICA
+      TaskDefinition: !Ref TaskDefinition

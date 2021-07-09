@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Cutest animal image generator</title>
+        <style>
+            body {
+                font-family: sans-serif;
+            }
+            label {
+                display: block;
+            }
+            input[type="submit"] {
+                margin: 0.5rem 0;
+                padding: 0.25rem 0.5rem;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Cutest animal image generator</h1>
+        <form>
+            <label for="submit">Click to see a random image of the cutest animal on earth!</label>
+            <input id="submit" type="submit" value="Generate!" />
+        </form>
+        <img id="image" src="" />
+        <script>
+          (async () => {
+            const formElement = document.querySelector("form");
+            formElement.addEventListener("submit", async (event) => {
+              event.preventDefault();
+
+              const apiKey = "d7AcrVeRflv1bH5zu2Mu7Gi7UFy3zo7N";
+              const tag = "cat";
+              const imageElement = document.getElementById("image");
+              const { data: { image_url } } = await (await fetch(`https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${tag}`)).json();
+              imageElement.setAttribute("src", image_url);
+              imageElement.dataset.tag = tag;
+            });
+          })();
+        </script>
+    </body>
+</html>
