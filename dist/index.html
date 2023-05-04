@@ -23,20 +23,18 @@
             <input id="submit" type="submit" value="Generate!" />
         </form>
         <img id="image" src="" />
-        <script>
-          (async () => {
+        <script type="module">
             const formElement = document.querySelector("form");
             formElement.addEventListener("submit", async (event) => {
-              event.preventDefault();
+                event.preventDefault();
 
-              const apiKey = "d7AcrVeRflv1bH5zu2Mu7Gi7UFy3zo7N";
-              const tag = "cat";
-              const imageElement = document.getElementById("image");
-              const { data: { image_url } } = await (await fetch(`https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${tag}`)).json();
-              imageElement.setAttribute("src", image_url);
-              imageElement.dataset.tag = tag;
+                const apiKey = "d7AcrVeRflv1bH5zu2Mu7Gi7UFy3zo7N";
+                const tag = "cat";
+                const imageElement = document.getElementById("image");
+                const { data: { images: { original: { url } } } } = await (await fetch(`https://api.giphy.com/v1/gifs/random?api_key=${apiKey}&tag=${tag}`)).json();
+                imageElement.setAttribute("src", url);
+                imageElement.dataset.tag = tag;
             });
-          })();
         </script>
     </body>
 </html>

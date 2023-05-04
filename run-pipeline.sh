@@ -1,11 +1,8 @@
-./saml-new.sh
 set -e
 
 set -o allexport
 source .env
 set +o allexport
-
-./saml-new.sh
 
 version="$(git rev-parse HEAD)"
 

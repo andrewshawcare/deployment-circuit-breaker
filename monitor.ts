@@ -1,4 +1,3 @@
-import * as child_process from 'child_process';
 import * as util from 'util';
 import * as dotenv from 'dotenv';
 import {
@@ -10,10 +9,7 @@ import {
 } from "@aws-sdk/client-ecs";
 
 (async () => {
-    const exec = util.promisify(child_process.exec);
     dotenv.config();
-    const { stdout, stderr } = await exec('./saml-new.sh')
-    console.log(stdout, stderr);
     
     const ecsClient = new ECSClient({});
     
@@ -30,7 +26,7 @@ import {
     
     // Service: deploymentConfiguration, deployments, events, healthCheckGracePeriodSeconds, desiredCount, pendingCount, runningCount, status, taskDefinition
     
-    console.log(util.inspect(serviceDescriptions, null, 4));
+    console.log(util.inspect(serviceDescriptions, undefined, 4));
     
     return Promise.resolve();
 })();
